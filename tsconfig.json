@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",        // keeps Node.js ESM
+    "target": "ES2022",          // stable modern JS
+    "outDir": "dist",            // compiled JS goes here
+    "rootDir": ".",              // root of your TS files
+    "strict": true,
+    "esModuleInterop": true,     // allows default imports from CJS modules
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true
+  }
+}
