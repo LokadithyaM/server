@@ -65,6 +65,8 @@ export const getPosts = async () => {
     .sort({ createdAt: -1 })
     .populate("authorId", "username") // only return username field
     .lean();
+
+  
 };
 
 

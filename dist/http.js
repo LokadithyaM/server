@@ -1,6 +1,7 @@
 // server/http.ts
 import express from "express";
 import { createUser, createPersona, createPost, getPosts, createComment, getCommentsForPost, likeTarget, unlikeTarget, getPersonas, } from "./storing.js";
+import { Like } from "./models/likes-model.js";
 const router = express.Router();
 // === USERS ===
 router.post("/users", async (req, res) => {
@@ -29,12 +30,12 @@ router.post("/personas", async (req, res) => {
 router.post("/posts", async (req, res) => {
     try {
         const { authorId, content, authorType, mediaId, mediaTitle, mediaCover, mediaType, mediaSubType, mediaYear, mediaAuthor, mediaArtist, rating, shareLink } = req.body;
-        console.log(mediaType ?? "undefined");
-        console.log(mediaSubType ?? "undefined");
-        console.log(mediaYear ?? "undefined");
-        console.log(mediaAuthor ?? "undefined");
-        console.log(mediaArtist ?? "undefined");
-        console.log("If you dont work i will find you i will end you.");
+        // console.log(mediaType ?? "undefined");
+        // console.log(mediaSubType ?? "undefined");
+        // console.log(mediaYear ?? "undefined");
+        // console.log(mediaAuthor ?? "undefined");
+        // console.log(mediaArtist ?? "undefined");
+        // console.log("If you dont work i will find you i will end you.");
         const post = await createPost(authorId, content, authorType, mediaId, mediaTitle, mediaCover, mediaType, mediaSubType, mediaYear, mediaAuthor, mediaArtist, rating, shareLink);
         res.json({ success: true, post });
     }
@@ -53,19 +54,36 @@ router.get("/personas", async (_req, res) => {
         res.status(400).json({ success: false, error: message });
     }
 });
-router.get("/posts", async (_req, res) => {
+router.get("/posts", async (req, res) => {
     try {
-        console.log("starting to post something");
+        const userId = req.query.userId;
+        if (!userId) {
+            return res.status(400).json({ success: false, error: "Missing userId" });
+        }
         const posts = await getPosts();
+        const postIds = posts.map(p => p._id.toString());
+        // gather all comments for posts
         const postsWithComments = await Promise.all(posts.map(async (post) => {
-            // returns a nested tree of comments
             const nestedComments = await getCommentsForPost(post._id.toString());
-            return {
-                ...post,
-                comments: nestedComments, // <-- better naming
-            };
+            return { ...post, comments: nestedComments };
         }));
-        res.json({ success: true, posts: postsWithComments });
+        const allCommentIds = postsWithComments.flatMap(p => p.comments.map(c => c._id.toString()));
+        // fetch all likes of this user across posts + comments
+        const userLikes = await Like.find({
+            userId,
+            targetId: { $in: [...postIds, ...allCommentIds] },
+        }).lean();
+        const likedSet = new Set(userLikes.map(like => like.targetId.toString() + "-" + like.targetType));
+        // attach isLiked flags
+        const enriched = postsWithComments.map(post => ({
+            ...post,
+            isLiked: likedSet.has(post._id.toString() + "-Post"),
+            comments: post.comments.map(c => ({
+                ...c,
+                isLiked: likedSet.has(c._id.toString() + "-Comment"),
+            })),
+        }));
+        res.json({ success: true, posts: enriched });
     }
     catch (err) {
         const message = err instanceof Error ? err.message : String(err);

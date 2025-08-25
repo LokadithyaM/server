@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 
 const likeSchema = new Schema({
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    targetId: { type: Schema.Types.ObjectId, required: true }, // can be Post or Comment
+    targetId: { type: Schema.Types.ObjectId, required: true },
     targetType: { type: String, enum: ["Post", "Comment"], required: true },
   }, { timestamps: true });
   
