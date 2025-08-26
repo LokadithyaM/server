@@ -14,7 +14,6 @@ import {
 } from "./storing.js";
 import { Like } from "./models/likes-model.js";
 
-
 const router = express.Router();
 
 // === USERS ===
@@ -31,8 +30,13 @@ router.post("/users", async (req, res) => {
 });
 router.post("/personas", async (req, res) => {
   try {
-    const { username, sys_instruction_posts, sys_instruction_comment } = req.body;
-    const persona = await createPersona(username, sys_instruction_posts, sys_instruction_comment);
+    const { username, sys_instruction_posts, sys_instruction_comment } =
+      req.body;
+    const persona = await createPersona(
+      username,
+      sys_instruction_posts,
+      sys_instruction_comment
+    );
     res.json({ success: true, persona });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -56,7 +60,7 @@ router.post("/posts", async (req, res) => {
       mediaAuthor,
       mediaArtist,
       rating,
-      shareLink
+      shareLink,
     } = req.body;
 
     // console.log(mediaType ?? "undefined");
@@ -89,7 +93,6 @@ router.post("/posts", async (req, res) => {
   }
 });
 
-
 router.get("/personas", async (_req, res) => {
   try {
     const personas = await getPersonas();
@@ -108,7 +111,8 @@ router.get("/posts", async (req, res) => {
     }
 
     const posts = await getPosts();
-    const postIds = posts.map(p => p._id.toString());
+    const postIds = posts.map((p) => p._id.toString());
+    console.log("postIds", postIds);
 
     // gather all comments for posts
     const postsWithComments = await Promise.all(
@@ -117,8 +121,11 @@ router.get("/posts", async (req, res) => {
         return { ...post, comments: nestedComments };
       })
     );
+    console.log("postsWithComments", postsWithComments);
 
-    const allCommentIds = postsWithComments.flatMap(p => p.comments.map(c => c._id.toString()));
+    const allCommentIds = postsWithComments.flatMap((p) =>
+      p.comments.map((c) => c._id.toString())
+    );
 
     // fetch all likes of this user across posts + comments
     const userLikes = await Like.find({
@@ -127,26 +134,25 @@ router.get("/posts", async (req, res) => {
     }).lean();
 
     const likedSet = new Set(
-      userLikes.map(like => like.targetId.toString() + "-" + like.targetType)
+      userLikes.map((like) => like.targetId.toString() + "-" + like.targetType)
     );
-
+    console.log("likedSet", likedSet);
     // attach isLiked flags
-    const enriched = postsWithComments.map(post => ({
+    const enriched = postsWithComments.map((post) => ({
       ...post,
       isLiked: likedSet.has(post._id.toString() + "-Post"),
-      comments: post.comments.map(c => ({
+      comments: post.comments.map((c) => ({
         ...c,
         isLiked: likedSet.has(c._id.toString() + "-Comment"),
       })),
     }));
-
+    console.log("enriched");
     res.json({ success: true, posts: enriched });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     res.status(500).json({ success: false, error: message });
   }
 });
-
 
 // === COMMENTS ===
 router.post("/posts/:postId/comments", async (req, res) => {
@@ -156,7 +162,12 @@ router.post("/posts/:postId/comments", async (req, res) => {
 
     console.log({ authorId, postId, content, parentCommentId });
 
-    const comment = await createComment(authorId, postId, content, parentCommentId);
+    const comment = await createComment(
+      authorId,
+      postId,
+      content,
+      parentCommentId
+    );
     res.json({ success: true, comment });
   } catch (err) {
     console.log(err);
@@ -164,7 +175,6 @@ router.post("/posts/:postId/comments", async (req, res) => {
     res.status(400).json({ success: false, error: message });
   }
 });
-
 
 router.get("/comments/:postId", async (req, res) => {
   try {
@@ -177,10 +187,10 @@ router.get("/comments/:postId", async (req, res) => {
 });
 
 router.get("/", async (_req, res) => {
-    console.log("atleast i am working dont feel bad!");
-    res.json({ success: true, message: "atleast i am working dont feel bad!" });
+  console.log("atleast i am working dont feel bad!");
+  res.json({ success: true, message: "atleast i am working dont feel bad!" });
 });
-  
+
 // === LIKES ===
 router.post("/likes", async (req, res) => {
   try {

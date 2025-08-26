@@ -1,12 +1,12 @@
-import 'dotenv/config';
-import express from 'express';
-import { WebSocketServer } from 'ws';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import "dotenv/config";
+import express from "express";
+import { WebSocketServer } from "ws";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import router from "./http.js";
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 import { Post } from "./models/posts-model.js";
 import { Comment } from "./models/comments-model.js";
-import cors from 'cors';
+import cors from "cors";
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -32,7 +32,8 @@ const MONGO_URI = process.env.MONGODB_URI || "";
 // }
 // // In-memory storage
 // const posts: Post[] = [];
-mongoose.connect(MONGO_URI)
+mongoose
+    .connect(MONGO_URI)
     .then(() => {
     console.log("✅ MongoDB connected");
     // Start server only after Mongo connects
@@ -40,9 +41,9 @@ mongoose.connect(MONGO_URI)
         console.log("🚀 Server running on http://localhost:8080");
     });
     // Gemini setup
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || '');
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
     const model = genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash',
+        model: "gemini-2.5-flash",
         tools: [{ codeExecution: {} }],
     });
     const wss = new WebSocketServer({ server });
@@ -56,11 +57,9 @@ mongoose.connect(MONGO_URI)
     // Generate Gemini reply
     const generateGeminiReply = async (message, sys) => {
         const chatSession = model.startChat({
-            history: [
-                { role: 'user', parts: [{ text: message }] }
-            ],
+            history: [{ role: "user", parts: [{ text: message }] }],
             systemInstruction: {
-                role: 'system',
+                role: "system",
                 parts: [{ text: sys }],
             },
         });
@@ -110,30 +109,31 @@ mongoose.connect(MONGO_URI)
     //   }
     // }, 1100000);
     // === WebSocket logic ===
-    wss.on('connection', async (ws) => {
-        console.log('New client connected');
+    wss.on("connection", async (ws) => {
+        console.log("New client connected");
         // // Initial sync: fetch posts from HTTP
         // const posts = await fetch('http://localhost:8080/api/posts').then(res => res.json());
         // ws.send(JSON.stringify({ type: 'init', posts }));
-        ws.on('message', async (rawMsg) => {
+        ws.on("message", async (rawMsg) => {
             try {
                 const msg = JSON.parse(rawMsg.toString());
                 if (msg.type === "auth") {
                     const postsRes = await fetch(`http://localhost:8080/api/posts?userId=${msg.userId}`).then((res) => res.json());
+                    console.log("message received", postsRes.posts);
                     ws.send(JSON.stringify({ type: "init", posts: postsRes.posts }));
                     return;
                 }
                 switch (msg.type) {
-                    case 'newPost': {
+                    case "newPost": {
                         console.log("mediaType:", msg.mediaType ?? "undefined");
                         console.log("mediaSubType:", msg.mediaSubType ?? "undefined");
                         console.log("mediaYear:", msg.mediaYear ?? "undefined");
                         console.log("mediaAuthor:", msg.mediaAuthor ?? "undefined");
                         console.log("mediaArtist:", msg.mediaArtist ?? "undefined");
                         console.log("heading to post the above");
-                        const created = await fetch('http://localhost:8080/api/posts', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                        const created = await fetch("http://localhost:8080/api/posts", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                                 authorId: msg.authorId,
                                 content: msg.content,
@@ -146,107 +146,137 @@ mongoose.connect(MONGO_URI)
                                 mediaYear: msg.mediaYear,
                                 mediaAuthor: msg.mediaAuthor,
                                 mediaArtist: msg.mediaArtist,
-                                rating: msg.rating
+                                rating: msg.rating,
                             }),
-                        }).then(res => res.json());
+                        }).then((res) => res.json());
                         if (created.success) {
                             const populated = await Post.findById(created.post._id)
                                 .populate("authorId", "username")
                                 .lean();
-                            broadcast({ type: 'post', post: populated });
+                            broadcast({ type: "post", post: populated });
                         }
                         else {
                             console.log("failed to generate in websockets 205");
                         }
                         break;
                     }
-                    case 'newReply': {
+                    case "newReply": {
                         console.log(msg);
                         const created = await fetch(`http://localhost:8080/api/posts/${msg.postId}/comments`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                                 authorId: msg.authorId,
                                 postId: msg.postId,
                                 content: msg.content,
                                 parentCommentId: msg.parentReplyId || null,
                             }),
-                        }).then(res => res.json());
+                        }).then((res) => res.json());
                         const populated = await Comment.findById(created.comment._id)
                             .populate("authorId", "username")
                             .lean();
-                        broadcast({ type: "comment", comment: populated, postId: msg.postId });
+                        broadcast({
+                            type: "comment",
+                            comment: populated,
+                            postId: msg.postId,
+                        });
                         break;
                     }
-                    case 'likePost': {
+                    case "likePost": {
                         console.log("is it hitting this?");
                         await fetch(`http://localhost:8080/api/likes`, {
-                            method: 'POST',
+                            method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                                 userId: msg.userId,
                                 targetId: msg.postId,
                                 targetType: msg.targetType,
-                            })
+                            }),
                         });
-                        await Post.findByIdAndUpdate(msg.postId, { $inc: { likeCount: 1 } });
-                        broadcast({ type: 'likePost', postId: msg.postId, userId: msg.userId });
+                        await Post.findByIdAndUpdate(msg.postId, {
+                            $inc: { likeCount: 1 },
+                        });
+                        broadcast({
+                            type: "likePost",
+                            postId: msg.postId,
+                            userId: msg.userId,
+                        });
                         break;
                     }
-                    case 'unlikePost': {
+                    case "unlikePost": {
                         console.log("is it hitting this?");
                         await fetch(`http://localhost:8080/api/likes`, {
-                            method: 'DELETE',
+                            method: "DELETE",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                                 userId: msg.userId,
                                 targetId: msg.postId,
                                 targetType: msg.targetType,
-                            })
+                            }),
                         });
-                        await Post.findByIdAndUpdate(msg.postId, { $inc: { likeCount: -1 } });
-                        broadcast({ type: 'unlikePost', postId: msg.postId, userId: msg.userId });
+                        await Post.findByIdAndUpdate(msg.postId, {
+                            $inc: { likeCount: -1 },
+                        });
+                        broadcast({
+                            type: "unlikePost",
+                            postId: msg.postId,
+                            userId: msg.userId,
+                        });
                         break;
                     }
-                    case 'likeReply': {
+                    case "likeReply": {
                         await fetch(`http://localhost:8080/api/likes`, {
-                            method: 'POST',
+                            method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                                 userId: msg.userId,
                                 targetId: msg.replyId,
                                 targetType: msg.targetType,
-                            })
+                            }),
                         });
-                        await Comment.findByIdAndUpdate(msg.replyId, { $inc: { likeCount: 1 } });
-                        broadcast({ type: 'likeReply', postId: msg.postId, replyId: msg.replyId, userId: msg.userId });
+                        await Comment.findByIdAndUpdate(msg.replyId, {
+                            $inc: { likeCount: 1 },
+                        });
+                        broadcast({
+                            type: "likeReply",
+                            postId: msg.postId,
+                            replyId: msg.replyId,
+                            userId: msg.userId,
+                        });
                         break;
                     }
-                    case 'unlikeReply': {
+                    case "unlikeReply": {
                         await fetch(`http://localhost:8080/api/likes`, {
-                            method: 'DELETE',
+                            method: "DELETE",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                                 userId: msg.userId,
                                 targetId: msg.replyId,
                                 targetType: msg.targetType,
-                            })
+                            }),
                         });
-                        await Comment.findByIdAndUpdate(msg.replyId, { $inc: { likeCount: -1 } });
-                        broadcast({ type: 'unlikeReply', postId: msg.postId, replyId: msg.replyId, userId: msg.userId });
+                        await Comment.findByIdAndUpdate(msg.replyId, {
+                            $inc: { likeCount: -1 },
+                        });
+                        broadcast({
+                            type: "unlikeReply",
+                            postId: msg.postId,
+                            replyId: msg.replyId,
+                            userId: msg.userId,
+                        });
                         break;
                     }
                     default:
-                        console.warn('Unknown WS message:', msg);
+                        console.warn("Unknown WS message:", msg);
                 }
             }
             catch (err) {
-                console.error('Error handling WS message:', err);
+                console.error("Error handling WS message:", err);
             }
         });
     });
 })
-    .catch(err => {
+    .catch((err) => {
     console.error("❌ MongoDB connection error:", err);
     process.exit(1);
 });

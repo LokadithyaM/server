@@ -29,7 +29,7 @@ router.post("/personas", async (req, res) => {
 // === POSTS ===
 router.post("/posts", async (req, res) => {
     try {
-        const { authorId, content, authorType, mediaId, mediaTitle, mediaCover, mediaType, mediaSubType, mediaYear, mediaAuthor, mediaArtist, rating, shareLink } = req.body;
+        const { authorId, content, authorType, mediaId, mediaTitle, mediaCover, mediaType, mediaSubType, mediaYear, mediaAuthor, mediaArtist, rating, shareLink, } = req.body;
         // console.log(mediaType ?? "undefined");
         // console.log(mediaSubType ?? "undefined");
         // console.log(mediaYear ?? "undefined");
@@ -61,28 +61,32 @@ router.get("/posts", async (req, res) => {
             return res.status(400).json({ success: false, error: "Missing userId" });
         }
         const posts = await getPosts();
-        const postIds = posts.map(p => p._id.toString());
+        const postIds = posts.map((p) => p._id.toString());
+        console.log("postIds", postIds);
         // gather all comments for posts
         const postsWithComments = await Promise.all(posts.map(async (post) => {
             const nestedComments = await getCommentsForPost(post._id.toString());
             return { ...post, comments: nestedComments };
         }));
-        const allCommentIds = postsWithComments.flatMap(p => p.comments.map(c => c._id.toString()));
+        console.log("postsWithComments", postsWithComments);
+        const allCommentIds = postsWithComments.flatMap((p) => p.comments.map((c) => c._id.toString()));
         // fetch all likes of this user across posts + comments
         const userLikes = await Like.find({
             userId,
             targetId: { $in: [...postIds, ...allCommentIds] },
         }).lean();
-        const likedSet = new Set(userLikes.map(like => like.targetId.toString() + "-" + like.targetType));
+        const likedSet = new Set(userLikes.map((like) => like.targetId.toString() + "-" + like.targetType));
+        console.log("likedSet", likedSet);
         // attach isLiked flags
-        const enriched = postsWithComments.map(post => ({
+        const enriched = postsWithComments.map((post) => ({
             ...post,
             isLiked: likedSet.has(post._id.toString() + "-Post"),
-            comments: post.comments.map(c => ({
+            comments: post.comments.map((c) => ({
                 ...c,
                 isLiked: likedSet.has(c._id.toString() + "-Comment"),
             })),
         }));
+        console.log("enriched");
         res.json({ success: true, posts: enriched });
     }
     catch (err) {
