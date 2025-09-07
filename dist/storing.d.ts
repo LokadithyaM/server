@@ -1,4 +1,5 @@
-export declare const createUser: (username: string) => Promise<import("mongoose").Document<unknown, {}, {
+import mongoose from "mongoose";
+export declare const createUser: (username: string) => Promise<mongoose.Document<unknown, {}, {
     createdAt: NativeDate;
     updatedAt: NativeDate;
 } & {
@@ -11,11 +12,11 @@ export declare const createUser: (username: string) => Promise<import("mongoose"
 } & {
     username: string;
 } & {
-    _id: import("mongoose").Types.ObjectId;
+    _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>;
-export declare const createPersona: (username: string, sys_instruction_posts: string, sys_instruction_comment: string) => Promise<import("mongoose").Document<unknown, {}, {
+export declare const createPersona: (username: string, sys_instruction_posts: string, sys_instruction_comment: string) => Promise<mongoose.Document<unknown, {}, {
     createdAt: NativeDate;
     updatedAt: NativeDate;
 } & {
@@ -32,16 +33,16 @@ export declare const createPersona: (username: string, sys_instruction_posts: st
     sys_instruction_posts: string;
     sys_instruction_comment: string;
 } & {
-    _id: import("mongoose").Types.ObjectId;
+    _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>;
-export declare const createPost: (authorId: string, content: string, authorType?: string, mediaId?: string, mediaTitle?: string, mediaCover?: string, mediaType?: string, mediaSubType?: string, mediaYear?: number, mediaAuthor?: string, mediaArtist?: string, rating?: number, shareLink?: string) => Promise<import("mongoose").Document<unknown, {}, {
+export declare const createPost: (authorId: string, content: string, authorType?: string, mediaId?: string, mediaTitle?: string, mediaCover?: string, mediaType?: string, mediaSubType?: string, mediaYear?: number, mediaAuthor?: string, mediaArtist?: string, rating?: number, shareLink?: string) => Promise<mongoose.Document<unknown, {}, {
     createdAt: NativeDate;
     updatedAt: NativeDate;
 } & {
     authorType: "User" | "Persona";
-    authorId: import("mongoose").Types.ObjectId;
+    authorId: mongoose.Types.ObjectId;
     content: string;
     rating: number;
     timestamp: NativeDate;
@@ -63,7 +64,7 @@ export declare const createPost: (authorId: string, content: string, authorType?
     updatedAt: NativeDate;
 } & {
     authorType: "User" | "Persona";
-    authorId: import("mongoose").Types.ObjectId;
+    authorId: mongoose.Types.ObjectId;
     content: string;
     rating: number;
     timestamp: NativeDate;
@@ -79,15 +80,15 @@ export declare const createPost: (authorId: string, content: string, authorType?
     mediaArtist?: string | null | undefined;
     shareLink?: string | null | undefined;
 } & {
-    _id: import("mongoose").Types.ObjectId;
+    _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>;
-export declare const getPosts: () => Promise<(import("mongoose").FlattenMaps<{
+export declare const getPosts: (limit?: number, cursor?: string) => Promise<(mongoose.FlattenMaps<{
     createdAt: NativeDate;
     updatedAt: NativeDate;
     authorType: "User" | "Persona";
-    authorId: import("mongoose").Types.ObjectId;
+    authorId: mongoose.Types.ObjectId;
     content: string;
     rating: number;
     timestamp: NativeDate;
@@ -103,55 +104,55 @@ export declare const getPosts: () => Promise<(import("mongoose").FlattenMaps<{
     mediaArtist?: string | null | undefined;
     shareLink?: string | null | undefined;
 }> & {
-    _id: import("mongoose").Types.ObjectId;
+    _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 })[]>;
-export declare const createComment: (authorId: string, postId: string, content: string, parentCommentId?: string) => Promise<import("mongoose").Document<unknown, {}, {
+export declare const createComment: (authorId: string, postId: string, content: string, parentCommentId?: string) => Promise<mongoose.Document<unknown, {}, {
     createdAt: NativeDate;
     updatedAt: NativeDate;
 } & {
-    authorId: import("mongoose").Types.ObjectId;
+    authorId: mongoose.Types.ObjectId;
     content: string;
     timestamp: NativeDate;
     likeCount: number;
-    postId: import("mongoose").Types.ObjectId;
-    parentCommentId: import("mongoose").Types.ObjectId;
+    postId: mongoose.Types.ObjectId;
+    parentCommentId: mongoose.Types.ObjectId;
 }, {}, {
     timestamps: true;
 }> & {
     createdAt: NativeDate;
     updatedAt: NativeDate;
 } & {
-    authorId: import("mongoose").Types.ObjectId;
+    authorId: mongoose.Types.ObjectId;
     content: string;
     timestamp: NativeDate;
     likeCount: number;
-    postId: import("mongoose").Types.ObjectId;
-    parentCommentId: import("mongoose").Types.ObjectId;
+    postId: mongoose.Types.ObjectId;
+    parentCommentId: mongoose.Types.ObjectId;
 } & {
-    _id: import("mongoose").Types.ObjectId;
+    _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>;
 export declare const getCommentsForPost: (postId: string) => Promise<any[]>;
-export declare const getPersonas: () => Promise<(import("mongoose").FlattenMaps<{
+export declare const getPersonas: () => Promise<(mongoose.FlattenMaps<{
     createdAt: NativeDate;
     updatedAt: NativeDate;
     username: string;
     sys_instruction_posts: string;
     sys_instruction_comment: string;
 }> & {
-    _id: import("mongoose").Types.ObjectId;
+    _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 })[]>;
-export declare const likeTarget: (userId: string, targetId: string, targetType: "Post" | "Comment") => Promise<import("mongoose").Document<unknown, {}, {
+export declare const likeTarget: (userId: string, targetId: string, targetType: "Post" | "Comment") => Promise<mongoose.Document<unknown, {}, {
     createdAt: NativeDate;
     updatedAt: NativeDate;
 } & {
-    userId: import("mongoose").Types.ObjectId;
-    targetId: import("mongoose").Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
+    targetId: mongoose.Types.ObjectId;
     targetType: "Post" | "Comment";
 }, {}, {
     timestamps: true;
@@ -159,31 +160,31 @@ export declare const likeTarget: (userId: string, targetId: string, targetType: 
     createdAt: NativeDate;
     updatedAt: NativeDate;
 } & {
-    userId: import("mongoose").Types.ObjectId;
-    targetId: import("mongoose").Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
+    targetId: mongoose.Types.ObjectId;
     targetType: "Post" | "Comment";
 } & {
-    _id: import("mongoose").Types.ObjectId;
+    _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }>;
-export declare const getLikes: (userId: string) => Promise<(import("mongoose").FlattenMaps<{
+export declare const getLikes: (userId: string) => Promise<(mongoose.FlattenMaps<{
     createdAt: NativeDate;
     updatedAt: NativeDate;
-    userId: import("mongoose").Types.ObjectId;
-    targetId: import("mongoose").Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
+    targetId: mongoose.Types.ObjectId;
     targetType: "Post" | "Comment";
 }> & {
-    _id: import("mongoose").Types.ObjectId;
+    _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 })[]>;
-export declare const unlikeTarget: (userId: string, targetId: string, targetType: "Post" | "Comment") => Promise<(import("mongoose").Document<unknown, {}, {
+export declare const unlikeTarget: (userId: string, targetId: string, targetType: "Post" | "Comment") => Promise<(mongoose.Document<unknown, {}, {
     createdAt: NativeDate;
     updatedAt: NativeDate;
 } & {
-    userId: import("mongoose").Types.ObjectId;
-    targetId: import("mongoose").Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
+    targetId: mongoose.Types.ObjectId;
     targetType: "Post" | "Comment";
 }, {}, {
     timestamps: true;
@@ -191,20 +192,20 @@ export declare const unlikeTarget: (userId: string, targetId: string, targetType
     createdAt: NativeDate;
     updatedAt: NativeDate;
 } & {
-    userId: import("mongoose").Types.ObjectId;
-    targetId: import("mongoose").Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
+    targetId: mongoose.Types.ObjectId;
     targetType: "Post" | "Comment";
 } & {
-    _id: import("mongoose").Types.ObjectId;
+    _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 }) | null>;
-export declare const getUsers: () => Promise<(import("mongoose").FlattenMaps<{
+export declare const getUsers: () => Promise<(mongoose.FlattenMaps<{
     createdAt: NativeDate;
     updatedAt: NativeDate;
     username: string;
 }> & {
-    _id: import("mongoose").Types.ObjectId;
+    _id: mongoose.Types.ObjectId;
 } & {
     __v: number;
 })[]>;

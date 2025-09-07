@@ -4,6 +4,7 @@ import { Persona } from "./models/persona-model.js";
 import { Post } from "./models/posts-model.js";
 import { Comment } from "./models/comments-model.js";
 import { Like } from "./models/likes-model.js";
+import mongoose from "mongoose";
 // === USERS ===
 export const createUser = async (username) => {
     const user = new User({ username });
@@ -35,11 +36,17 @@ export const createPost = async (authorId, content, authorType = "User", mediaId
     console.log(post);
     return post.save();
 };
-export const getPosts = async () => {
-    return Post.find()
-        .sort({ createdAt: -1 })
-        .populate("authorId", "username") // only return username field
+export const getPosts = async (limit = 50, cursor) => {
+    const query = {};
+    if (cursor) {
+        query._id = { $lt: new mongoose.Types.ObjectId(cursor) };
+    }
+    const posts = await Post.find(query)
+        .sort({ _id: -1 }) // sort by _id instead of createdAt for cursor-based pagination
+        .limit(limit)
+        .populate("authorId", "username")
         .lean();
+    return posts;
 };
 // === COMMENTS ===
 export const createComment = async (authorId, postId, content, parentCommentId) => {

@@ -139,13 +139,28 @@ mongoose.connect(MONGO_URI)
     wss.on('connection', async (ws) => {
       console.log('New client connected');
 
-      // Initial sync: fetch posts from HTTP
-      const posts = await fetch('http://localhost:8080/api/posts').then(res => res.json());
-      ws.send(JSON.stringify({ type: 'init', posts }));
+      // // Initial sync: fetch posts from HTTP
+      // const posts = await fetch('http://localhost:8080/api/posts').then(res => res.json());
+      // ws.send(JSON.stringify({ type: 'init', posts }));
 
       ws.on('message', async (rawMsg) => {
         try {
           const msg = JSON.parse(rawMsg.toString());
+
+          if(msg.type==="auth"){
+            const postsRes = await fetch(
+              `http://localhost:8080/api/posts?userId=${msg.userId}`
+            ).then((res) => res.json());
+          
+            ws.send(JSON.stringify({
+              type: "init",
+              posts: postsRes.posts,
+              nextCursor: postsRes.nextCursor,
+            }));
+          
+            return;
+          }
+          
 
           switch (msg.type) {
             case 'newPost': {
@@ -211,17 +226,68 @@ mongoose.connect(MONGO_URI)
             }
 
             case 'likePost': {
-              await fetch(`http://localhost:8080/api/posts/${msg.postId}/like`, { method: 'POST' });
-              broadcast({ type: 'likePost', postId: msg.postId });
+              console.log("is it hitting this?");
+              await fetch(`http://localhost:8080/api/likes`, {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  userId: msg.userId,
+                  targetId: msg.postId,
+                  targetType:  msg.targetType,
+                })
+              });
+
+              await Post.findByIdAndUpdate(msg.postId, { $inc: { likeCount: 1 } });
+
+              broadcast({ type: 'likePost', postId: msg.postId, userId: msg.userId });
               break;
             }
-
+            
+            case 'unlikePost': {
+              console.log("is it hitting this?");
+              await fetch(`http://localhost:8080/api/likes`, {
+                method: 'DELETE',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  userId: msg.userId,
+                  targetId: msg.postId,
+                  targetType:  msg.targetType,
+                })
+              });
+              await Post.findByIdAndUpdate(msg.postId, { $inc: { likeCount: -1 } });
+              broadcast({ type: 'unlikePost', postId: msg.postId, userId: msg.userId });
+              break;
+            }
+            
             case 'likeReply': {
-              await fetch(`http://localhost:8080/api/comments/${msg.replyId}/like`, { method: 'POST' });
-              broadcast({ type: 'likeReply', postId: msg.postId, replyId: msg.replyId });
+              await fetch(`http://localhost:8080/api/likes`, {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  userId: msg.userId,
+                  targetId: msg.replyId,
+                  targetType: msg.targetType,
+                })
+              });
+              await Comment.findByIdAndUpdate(msg.replyId, { $inc: { likeCount: 1 } });
+              broadcast({ type: 'likeReply', postId: msg.postId, replyId: msg.replyId, userId: msg.userId });
               break;
             }
-
+            
+            case 'unlikeReply': {
+              await fetch(`http://localhost:8080/api/likes`, {
+                method: 'DELETE',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  userId: msg.userId,
+                  targetId: msg.replyId,
+                  targetType: msg.targetType,
+                })
+              });
+              await Comment.findByIdAndUpdate(msg.replyId, { $inc: { likeCount: -1 } });
+              broadcast({ type: 'unlikeReply', postId: msg.postId, replyId: msg.replyId, userId: msg.userId });
+              break;
+            }
             default:
               console.warn('Unknown WS message:', msg);
           }
